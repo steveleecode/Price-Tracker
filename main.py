@@ -52,7 +52,6 @@ def main():
             print(f"Price Changed to {realPrice} at {current_time}")
         else:
             print(f"Current Price is {realPrice} at {current_time}")
-        #print(f"Current price of {name} is {price}")
         iterations += 1
         previousPrice = realPrice
         time.sleep(5)
