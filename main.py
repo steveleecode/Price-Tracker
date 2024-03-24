@@ -1,29 +1,65 @@
 # importing necessary packages
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-from webdriver_manager.chrome import ChromeDriverManager
-import ping, socket
+from bs4 import BeautifulSoup
+import requests
 import keyboard
 import time
+import sys
+from datetime import datetime
+
+def ping_website(url):
+    try:
+        response = requests.get(url)
+        if response.status_code == 200:
+            item = BeautifulSoup(response.content, "html.parser").find(id="productTitle")
+            print(f"Found Product: {item.getText().lstrip()}")
+            return True
+        else:
+            print(f"Website is unreachable (Status code: {response.status_code}).")
+            return False
+    except requests.ConnectionError:
+        print(f"Website is unreachable.")
+        return False
 
 
 def main():
-    url = input("Input a URL to Price Track")
-    try:
-        ping.verbose_ping(url, count=3)
-    except socket.error:
-        print("Invalid Input")
+    url = input("Input a URL to Price Track: ")
+    if not ping_website(url):
         main()
     
+    previousPrice = None
+    iterations = 0
     while(not keyboard.is_pressed('p')):
-        driver = webdriver.Chrome(ChromeDriverManager().install())
-        driver.get(url)
-        price = driver.find_elements(By.CLASS_NAME, "aok-offscreen")
-        item = driver.find_elements(By.CLASS_NAME, "a-size-large product-title-word-break")
-        print(f"Current price of {item} is {price}")
-        time.sleep(5000)
+        #Special Config for Amazon
+        HEADERS = ({'User-Agent':
+            'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/44.0.2403.157 Safari/537.36',
+            'Accept-Language': 'en-US, en;q=0.5'})
+        response = requests.get(url, headers=HEADERS)
+        soup = BeautifulSoup(response.content, "html.parser")
+        
+        prices = soup.find_all("span", attrs={"class":'aok-offscreen'})
+        name = soup.find(id="productTitle")
+        realPrice = ""
+        
+        for price in prices:
+            priceText = price.getText().lstrip().rstrip()
+            if len(priceText) < 8:
+                realPrice = priceText
+                break
+            
+        current_time = datetime.now().strftime("%I:%M:%S %p")
+        
+        if iterations > 0 and not realPrice == previousPrice:
+            print(f"Price Changed to {realPrice} at {current_time}")
+        else:
+            print(f"Current Price is {realPrice} at {current_time}")
+        #print(f"Current price of {name} is {price}")
+        iterations += 1
+        previousPrice = realPrice
+        time.sleep(5)
 
+    print("Exiting Program")
     #closing the driver
-    driver.close()
+    sys.exit(1)
 
-main()
+if __name__ == "__main__":
+    main()
