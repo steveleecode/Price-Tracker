@@ -21,10 +21,10 @@ def ping_website(url):
         return False
 
 
-def main():
+def priceTrack():
     url = input("Input a URL to Price Track: ")
     if not ping_website(url):
-        main()
+        priceTrack()
     
     previousPrice = None
     iterations = 0
@@ -61,4 +61,4 @@ def main():
     sys.exit(1)
 
 if __name__ == "__main__":
-    main()
+    priceTrack()
